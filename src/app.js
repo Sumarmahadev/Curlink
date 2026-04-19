@@ -8,6 +8,7 @@ import { createQueryRouter } from "./routes/query.js";
 export function createApp({ env, logger, pipeline }) {
   const app = express();
 
+  // Security & middleware
   app.use(helmet());
   app.use(
     cors({
@@ -18,13 +19,15 @@ export function createApp({ env, logger, pipeline }) {
   app.use(express.json({ limit: "1mb" }));
   app.use(morgan("dev"));
 
-  app.get("/health", (req, res) => {
+  // Health check under /api for consistency
+  app.get("/api/health", (req, res) => {
     res.json({ ok: true, service: "curalink-backend" });
   });
 
+  // Main API routes
   app.use("/api", createQueryRouter({ pipeline }));
 
-  // 404
+  // 404 handler
   app.use((req, res, next) => next(new HttpError(404, "Not Found")));
 
   // Error handler
@@ -41,4 +44,3 @@ export function createApp({ env, logger, pipeline }) {
 
   return app;
 }
-
