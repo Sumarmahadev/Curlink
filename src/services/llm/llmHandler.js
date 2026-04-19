@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 const str = z
-  .union([z.string(), z.array(z.string()).transform(v => v.join(" ")), z.null(), z.undefined()])
+  .union([
+    z.string(),
+    z.array(z.string()).transform(v => v.join(" ")),
+    z.null(),
+    z.undefined(),
+  ])
   .transform(v => v ?? "");
 
 const LlmOutputSchema = z.object({
