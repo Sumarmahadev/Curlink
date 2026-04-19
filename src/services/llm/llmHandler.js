@@ -1,36 +1,26 @@
 import { z } from "zod";
 
+const str = z
+  .union([z.string(), z.array(z.string()).transform(v => v.join(" ")), z.null(), z.undefined()])
+  .transform(v => v ?? "");
+
 const LlmOutputSchema = z.object({
-  overview: z.string(),
-  research_insights: z.string(),
-  conflicting_evidence: z.string(),
-  clinical_trials: z.string(),
-  personalized_insight: z.string(),
-  selection_rationale: z.string().optional().default(""),
-  sources: z.array(z.any()).optional().default([]),
-  fallback: z.boolean().optional(),
-});
+  overview:             str,
+  research_insights:    str,
+  conflicting_evidence: str,
+  clinical_trials:      str,
+  personalized_insight: str,
+}).catchall(z.unknown());
 
 export async function runLlm({ ollama, prompt }) {
-  try {
-    const raw = await ollama.generateJson(prompt);
-    const parsed = LlmOutputSchema.safeParse(raw);
-
-    if (!parsed.success) {
-      throw new Error("Invalid LLM format");
-    }
-
-    return parsed.data;
-  } catch (err) {
-    return {
-      overview: "Fast fallback summary.",
-      research_insights: "Using ranked sources only.",
-      conflicting_evidence: "Limited comparison available.",
-      clinical_trials: "Some trials exist but not fully analyzed.",
-      personalized_insight: "Consult a doctor.",
-      selection_rationale: "Fallback triggered.",
-      sources: [],
-      fallback: true,
-    };
-  }
+  const raw = await ollama.generateJson(prompt);
+  const parsed = LlmOutputSchema.safeParse(raw);
+  if (parsed.success) return parsed.data;
+  return {
+    overview:             String(raw?.overview || ""),
+    research_insights:    String(raw?.research_insights || ""),
+    conflicting_evidence: String(raw?.conflicting_evidence || ""),
+    clinical_trials:      String(raw?.clinical_trials || ""),
+    personalized_insight: String(raw?.personalized_insight || ""),
+  };
 }
